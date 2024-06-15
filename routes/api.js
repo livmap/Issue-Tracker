@@ -1,115 +1,55 @@
-/*
-*
-*
-*       Complete the API routing below
-*
-*
-*/
-
 'use strict';
 
-var expect = require('chai').expect;
-let mongodb = require('mongodb')
-let mongoose = require('mongoose')
-
-let uri = process.env.MONGO_URI
+const Issue = require('../models').Issue
+const Project = require('../models').Project
 
 module.exports = function (app) {
-  
-  mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
-  
-  let issueSchema = new mongoose.Schema({
-    issue_title: {type: String, required: true},
-    issue_text: {type: String, required: true},
-    created_by : {type: String, required: true},
-    assigned_to : String,
-    status_text : String,
-    open: {type: Boolean, required: true},
-    created_on: {type: Date, required: true},
-    updated_on: {type: Date, required: true},
-    project: String
-  })
-  
-  let Issue = mongoose.model('Issue', issueSchema)
 
   app.route('/api/issues/:project')
   
     .get(function (req, res){
-      var project = req.params.project;
-      let filterObject = Object.assign(req.query)
-      filterObject['project'] =project
-      Issue.find(
-        filterObject,
-        (error, arrayOfResults) => {
-          if(!error && arrayOfResults){
-            return res.json(arrayOfResults)
-          }
-        }
-      )
+      let project = req.params.project;
+      
     })
     
-    .post(function (req, res){
-      var project = req.params.project;
-      if(!req.body.issue_title || !req.body.issue_text || !req.body.created_by){
-        return res.json('Required fields missing from request')
+    .post(async (req, res) => {
+      let project = req.params.project;
+
+      if(!req.body.issue_title || !req.body.issue_text || !req.body.issue_title){
+        res.send("Please fill in the required values")
+        return
       }
-      let newIssue = new Issue({
+
+      const newIssue = new Issue({
         issue_title: req.body.issue_title,
         issue_text: req.body.issue_text,
         created_by: req.body.created_by,
-        assigned_to: req.body.assigned_to || '',
-        status_text: req.body.status_text || '',
+        assigned_to: req.body.assigned_to | '',
+        status_text: req.body.status_text | '',
         open: true,
-        created_on: new Date().toUTCString(),
-        updated_on: new Date().toUTCString(),
+        created_on: new Date(),
+        updated_on: new Date(),
         project: project
       })
-      newIssue.save((error, savedIssue) => {
-        if(!error && savedIssue){
-          return res.json(savedIssue)
-        }
-      })
+
+      try {
+
+        const issue = await newIssue.save()
+        res.json({ _id: issue._id, title: issue.title})
+      } catch(err){
+        res.send('Error')
+      }
       
     })
     
     .put(function (req, res){
-      var project = req.params.project;
-      let updateObject = {}
-      Object.keys(req.body).forEach((key) => {
-        if(req.body[key] != ''){
-          updateObject[key] = req.body[key]
-        }
-      })
-      if(Object.keys(updateObject).length < 2){
-        return res.json('no updated field sent')
-      }
-      updateObject['updated_on'] = new Date().toUTCString()
-      Issue.findByIdAndUpdate(
-      req.body._id,
-      updateObject,
-      {new: true},
-      (error, updatedIssue) => {
-       if(!error && updatedIssue){
-          return res.json('successfully updated')
-        }else if(!updatedIssue){
-          return res.json('could not update '+ req.body._id)
-        }
-      }
-        )
+      let project = req.params.project;
+      
     })
     
     .delete(function (req, res){
-      var project = req.params.project;
-      if(!req.body._id){
-        return res.json('id error')
-      }
-      Issue.findByIdAndRemove(req.body._id, (error, deletedIssue) => {
-        if(!error && deletedIssue){
-          res.json( 'deleted '+ deletedIssue.id)
-        }else if(!deletedIssue){
-          res.json('could not delete '+ req.body._id)
-        }
-      })
+      let project = req.params.project;
+      
     });
     
 };
