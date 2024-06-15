@@ -9,6 +9,18 @@ module.exports = function (app) {
   
     .get(function (req, res){
       let project = req.params.project;
+
+      if(!project){
+        res.send('Please provide an applicable project')
+        return 
+      }
+
+      try {
+        const issues = new Issue.find({ project: project })
+        
+      } catch (err){
+        res.send('Error')
+      }
       
     })
     
@@ -24,8 +36,8 @@ module.exports = function (app) {
         issue_title: req.body.issue_title,
         issue_text: req.body.issue_text,
         created_by: req.body.created_by,
-        assigned_to: req.body.assigned_to | '',
-        status_text: req.body.status_text | '',
+        assigned_to: req.body.assigned_to || '',
+        status_text: req.body.status_text || '',
         open: true,
         created_on: new Date(),
         updated_on: new Date(),
